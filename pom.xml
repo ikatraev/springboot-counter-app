@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.franklinamerican.maven.plugin.docker.bug</groupId>
+    <artifactId>springboot-counter-app</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <properties>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-boot.version>2.0.5.RELEASE</spring-boot.version>
+
+        <docker.verbose>true</docker.verbose>
+        <docker.plugin.version>0.26.1</docker.plugin.version>
+        <docker.run.network>0.26</docker.run.network>
+
+        <docker.image.name>maven-docker-plugin/${project.artifactId}</docker.image.name>
+
+        <docker.build.label.build_date>1970-01-01T00:00:00Z</docker.build.label.build_date>
+        <docker.build.label.vcs_url>local</docker.build.label.vcs_url>
+        <docker.build.label.vcs_ref>local</docker.build.label.vcs_ref>
+        <docker.build.label.vcs_slug>local</docker.build.label.vcs_slug>
+        <docker.build.label.vendor>franklin american mortgage company</docker.build.label.vendor>
+        <docker.build.label.version>local</docker.build.label.version>
+        <docker.build.label.schema_version>1.0</docker.build.label.schema_version>
+
+        <springboot-counter-app.dockerFileDir>${project.basedir}/docker/image</springboot-counter-app.dockerFileDir>
+
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>docker-build</id>
+            <build>
+                <plugins>
+                    <!-- tag::docker[] -->
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>${docker.plugin.version}</version>
+                        <configuration>
+                            <!--<registry>${docker.registry.url}</registry>-->
+                            <images>
+                                <image>
+                                    <name>maven-docker-plugin/springboot-counter-app</name>
+                                    <alias>springboot-counter-app</alias>
+                                    <build>
+                                        <args>
+                                            <ARTIFACT_ID>springboot-counter-app</ARTIFACT_ID>
+                                            <BUILD_DATE>${docker.build.label.build_date}</BUILD_DATE>
+                                            <VCS_URL>${docker.build.label.vcs_url}</VCS_URL>
+                                            <VCS_REF>${docker.build.label.vcs_ref}</VCS_REF>
+                                            <VCS_SLUG>${docker.build.label.vcs_slug}</VCS_SLUG>
+                                            <VENDOR>${docker.build.label.vendor}</VENDOR>
+                                            <VERSION>${docker.build.label.version}</VERSION>
+                                            <SCHEMA_VERSION>${docker.build.label.schema_version}</SCHEMA_VERSION>
+                                        </args>
+                                        <assembly>
+                                            <mode>dir</mode>
+                                            <inline>
+                                                <files>
+                                                    <file>
+                                                        <source>
+                                                            ${project.build.directory}/springboot-counter-app-${project.version}-boot.jar
+                                                        </source>
+                                                        <outputDirectory>./</outputDirectory>
+                                                        <destName>springboot-counter-app.jar</destName>
+                                                    </file>
+                                                </files>
+                                            </inline>
+                                        </assembly>
+                                        <dockerFileDir>${project.basedir}/docker/image</dockerFileDir>
+                                        <tags>
+                                            <tag>latest</tag>
+                                        </tags>
+                                    </build>
+                                    <run>
+                                        <namingStrategy>alias</namingStrategy>
+                                        <env>
+                                            <ENABLE_JMX>1</ENABLE_JMX>
+                                            <ENABLE_JDWP>1</ENABLE_JDWP>
+                                            <JDWP_PORT>5056</JDWP_PORT>
+                                            <JMX_PORT>9056</JMX_PORT>
+                                            <JAVA_OPTS>-Xmx160M -Xms160M</JAVA_OPTS>
+                                        </env>
+                                        <restartPolicy>
+                                            <name>on-failure</name>
+                                            <retry>5</retry>
+                                        </restartPolicy>
+                                        <ports>
+                                            <port>5056:5056</port>
+                                            <port>9056:9056</port>
+                                            <port>8282:8080</port>
+                                        </ports>
+                                        <log>
+                                            <prefix>springboot-counter-app</prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <wait>
+                                            <time>60000</time>
+                                            <http>
+                                                <url>http://localhost:8282</url>
+                                                <method>GET</method>
+                                                <status>200</status>
+                                            </http>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>springboot-counter-app-build</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- end::docker[] -->
+
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <version>${spring-boot.version}</version>
+                        <executions>
+                            <execution>
+                                <id>repackage</id>
+                                <goals>
+                                    <goal>repackage</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>boot</classifier>
+                                    <excludeGroupIds>org.projectlombok</excludeGroupIds>
+                                    <mainClass>com.franklinamerican.maven.plugin.docker.MavenDockerApplication</mainClass>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>docker-build-with-external</id>
+            <build>
+                <plugins>
+                    <!-- tag::docker[] -->
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>${docker.plugin.version}</version>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <external>
+                                        <type>properties</type>
+                                        <prefix>springboot-counter-app</prefix>
+                                        <mode>override</mode>
+                                    </external>
+                                    <name>maven-docker-plugin/springboot-counter-app</name>
+                                    <alias>springboot-counter-app</alias>
+                                    <build>
+                                        <args>
+                                            <ARTIFACT_ID>springboot-counter-app</ARTIFACT_ID>
+                                            <BUILD_DATE>${docker.build.label.build_date}</BUILD_DATE>
+                                            <VCS_URL>${docker.build.label.vcs_url}</VCS_URL>
+                                            <VCS_REF>${docker.build.label.vcs_ref}</VCS_REF>
+                                            <VCS_SLUG>${docker.build.label.vcs_slug}</VCS_SLUG>
+                                            <VENDOR>${docker.build.label.vendor}</VENDOR>
+                                            <VERSION>${docker.build.label.version}</VERSION>
+                                            <SCHEMA_VERSION>${docker.build.label.schema_version}</SCHEMA_VERSION>
+                                        </args>
+                                        <assembly>
+                                            <mode>dir</mode>
+                                            <inline>
+                                                <files>
+                                                    <file>
+                                                        <source>
+                                                            ${project.build.directory}/springboot-counter-app-${project.version}-boot.jar
+                                                        </source>
+                                                        <outputDirectory>./</outputDirectory>
+                                                        <destName>springboot-counter-app.jar</destName>
+                                                    </file>
+                                                </files>
+                                            </inline>
+                                        </assembly>
+                                        <dockerFileDir>${project.basedir}/docker/image</dockerFileDir>
+                                        <tags>
+                                            <tag>latest</tag>
+                                        </tags>
+                                    </build>
+                                    <run>
+                                        <namingStrategy>alias</namingStrategy>
+                                        <env>
+                                            <ENABLE_JMX>1</ENABLE_JMX>
+                                            <ENABLE_JDWP>1</ENABLE_JDWP>
+                                            <JDWP_PORT>5056</JDWP_PORT>
+                                            <JMX_PORT>9056</JMX_PORT>
+                                            <JAVA_OPTS>-Xmx160M -Xms160M</JAVA_OPTS>
+                                        </env>
+                                        <restartPolicy>
+                                            <name>on-failure</name>
+                                            <retry>5</retry>
+                                        </restartPolicy>
+                                        <ports>
+                                            <port>5056:5056</port>
+                                            <port>9056:9056</port>
+                                            <port>8282:8080</port>
+                                        </ports>
+                                        <log>
+                                            <prefix>springboot-counter-app</prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <wait>
+                                            <time>60000</time>
+                                            <http>
+                                                <url>http://localhost:8282</url>
+                                                <method>GET</method>
+                                                <status>200</status>
+                                            </http>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>springboot-counter-app-build</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- end::docker[] -->
+
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <version>${spring-boot.version}</version>
+                        <executions>
+                            <execution>
+                                <id>repackage</id>
+                                <goals>
+                                    <goal>repackage</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>boot</classifier>
+                                    <excludeGroupIds>org.projectlombok</excludeGroupIds>
+                                    <mainClass>com.franklinamerican.maven.plugin.docker.MavenDockerApplication</mainClass>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <!-- Resource parsing maven properties in Spring Boot configuration files -->
+        <resources>
+            <resource>
+                <filtering>true</filtering>
+                <directory>${basedir}/src/main/resources</directory>
+                <includes>
+                    <include>**/application*.yaml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <excludes>
+                    <exclude>**/application*.yaml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Spring -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <developers>
+        <developer>
+            <name>Igor Katrayev</name>
+            <id>ikatraev</id>
+            <email>ikatraev@gmail.com</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <url>https://github.com/ikatraev/springboot-counter-app</url>
+
+</project>

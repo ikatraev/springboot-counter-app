@@ -1,0 +1,22 @@
+spring:
+  application:
+    id: ${random.uuid}
+    name: DOCKER-MAVEN-PLUGIN-V1
+    version: @project.version@
+  main:
+    banner-mode: "off"
+
+logging:
+  level:
+    root: info
+
+management:
+  server:
+    port: 8079
+  endpoint:
+    health:
+      show-details: always
+
+time:
+  format: MM-dd-yyyy HH:mm:ss
+
