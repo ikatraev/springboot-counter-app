@@ -24,3 +24,4 @@ The plugin ignores `assembly`->`inline` description if `external` configuration 
 
 ## References
 * [Maven Docker Plugin](https://github.com/fabric8io/docker-maven-plugin)
+* [Issue 1082](https://github.com/fabric8io/docker-maven-plugin/issues/1082)
